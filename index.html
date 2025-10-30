@@ -1,114 +1,213 @@
-import fetch from 'node-fetch';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Free MCA Lead Finder</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #0c1321;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    color: #f5d76e;
+    font-size: 42px;
+    margin: 40px 0 20px;
+  }
+  input, select {
+    padding: 18px;
+    font-size: 20px;
+    width: 55%;
+    border-radius: 8px;
+    border: none;
+    margin: 8px;
+  }
+  button {
+    padding: 18px 32px;
+    background: #f5d76e;
+    font-size: 20px;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: bold;
+    color: #111;
+  }
+  .lead-card {
+    width: 60%;
+    margin: 18px auto;
+    background: #111a2b;
+    padding: 22px;
+    border-left: 5px solid #f5d76e;
+    border-radius: 8px;
+    text-align: left;
+  }
+  .field { margin-bottom: 6px; font-size: 18px; }
+  .filters { margin-top: 18px; }
+  .filters input, .filters select {
+    width: 22%;
+    margin: 6px;
+    font-size: 16px;
+  }
+  .sort-buttons button {
+    font-size: 16px;
+    padding: 10px 14px;
+    margin: 4px;
+  }
 
-export default async function handler(req, res) {
-  const { keyword, state, minRev, maxRev, filedAfter, sortOrder } = req.query;
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+  /* CRM Panel */
+  #crm-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 300px;
+    height: 100vh;
+    background: #f5d76e;
+    color: black;
+    padding: 20px;
+    border-left: 4px solid black;
+    overflow-y: auto;
+    text-align: left;
+  }
+  #crm-panel h3 {
+    margin-top: 0;
+    text-align: center;
+  }
+  .saved-card {
+    background: white;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+</style>
+</head>
+
+<body>
+<h1>Free MCA Lead Finder</h1>
+
+<input id="keyword" placeholder="Search industry or business type (e.g., contractor, restaurant)">
+<button onclick="findLeads()">Find Leads</button>
+
+<div class="filters">
+  <select id="state">
+    <option value="">All States</option>
+    <option>CA</option><option>FL</option><option>NY</option>
+    <option>TX</option><option>VA</option><option>GA</option>
+  </select>
+  <input id="minRev" placeholder="Min Revenue" type="number">
+  <input id="maxRev" placeholder="Max Revenue" type="number">
+  <input id="filedAfter" type="date">
+</div>
+
+<div class="sort-buttons">
+  <button onclick="setSort('asc')">⬆️ Revenue Low → High</button>
+  <button onclick="setSort('desc')">⬇️ Revenue High → Low</button>
+</div>
+
+<div id="results"></div>
+
+<!-- CRM Panel -->
+<div id="crm-panel">
+  <h3>📂 Saved Leads</h3>
+  <div id="savedList"></div>
+  <button onclick="downloadSaved()">⬇️ Download CSV</button>
+</div>
+
+<script>
+let sortOrder = "desc";
+let savedLeads = JSON.parse(localStorage.getItem("savedLeads") || "[]");
+
+function setSort(order) {
+  sortOrder = order;
+  findLeads();
+}
+
+async function findLeads() {
+  const keyword = document.getElementById("keyword").value;
+  const state = document.getElementById("state").value;
+  const minRev = document.getElementById("minRev").value || 0;
+  const maxRev = document.getElementById("maxRev").value || 999999999;
+  const filedAfter = document.getElementById("filedAfter").value || "";
+
+  document.getElementById("results").innerHTML = "🔍 Searching...";
 
   try {
-    // Google Search for US only
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${keyword}+business+in+${state}+USA&type=company&key=${GOOGLE_API_KEY}`;
-    let googleRes = await fetch(url);
-    let places = await googleRes.json();
+    const res = await fetch(`/api/leads?keyword=${keyword}&state=${state}&minRev=${minRev}&maxRev=${maxRev}&filedAfter=${filedAfter}&sortOrder=${sortOrder}`);
+    const data = await res.json();
+    window.lastResults = data;
 
-    if (!places.results) return res.json([]);
-
-    // process results
-    let results = [];
-
-    for (let p of places.results.slice(0, 8)) {
-      // phone + website lookup
-      let detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=name,formatted_address,formatted_phone_number,website&key=${GOOGLE_API_KEY}`;
-      let detRes = await fetch(detailsUrl);
-      let det = await detRes.json();
-
-      let name = det.result?.name;
-      let address = det.result?.formatted_address;
-      let phone = det.result?.formatted_phone_number || "N/A";
-      let website = det.result?.website || "";
-      let email = "";
-
-      // extract email from website if exists
-      if (website) {
-        try {
-          let siteRes = await fetch(website, { timeout: 5000 });
-          let text = await siteRes.text();
-          let emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-          if (emailMatch) email = emailMatch[0];
-        } catch {}
-      }
-
-      // get owner + filing date
-      let owner = "N/A", filedDate = "N/A";
-      try {
-        let ocRes = await fetch(`https://api.opencorporates.com/v0.4/companies/search?q=${encodeURIComponent(name)}&order=score`);
-        let oc = await ocRes.json();
-        if (oc?.results?.companies?.length) {
-          owner = oc.results.companies[0].company?.officers?.[0]?.name || "N/A";
-          filedDate = oc.results.companies[0].company?.incorporation_date || "N/A";
-        }
-      } catch {}
-
-      // revenue estimate
-      let revenue = await estimateRevenue(keyword, website);
-
-      // filing filter
-      if (filedDate && filedAfter && filedDate < filedAfter) continue;
-
-      // revenue range filter
-      if (revenue < minRev || revenue > maxRev) continue;
-
-      results.push({
-        name,
-        address,
-        phone,
-        website,
-        email,
-        owner,
-        filedDate,
-        revenue
-      });
+    if (!data.length) {
+      document.getElementById("results").innerHTML = "No leads found.";
+      return;
     }
 
-    // sort
-    results.sort((a, b) => sortOrder === "asc" ? a.revenue - b.revenue : b.revenue - a.revenue);
-
-    return res.json(results);
-  } catch (err) {
-    console.error(err);
-    return res.json([]);
+    document.getElementById("results").innerHTML = data.map((biz, i) => `
+      <div class="lead-card">
+        <div class="field"><b>${biz.name}</b></div>
+        <div class="field">📍 ${biz.address}</div>
+        <div class="field">📞 ${biz.phone || "N/A"}</div>
+        <div class="field">🌐 ${biz.website || "N/A"}</div>
+        <div class="field">✉️ ${biz.email || "N/A"}</div>
+        <div class="field">👤 Owner: ${biz.owner || "Unknown"}</div>
+        <div class="field">💰 Est Revenue: <b>${biz.revenue ? "$" + biz.revenue.toLocaleString() : "N/A"}</b></div>
+        <div class="field">🗓️ Filed: ${biz.filedDate || "Unknown"}</div>
+        <button onclick="saveLead(${i})" style="margin-top:10px;background:#5ced73;color:#000;border:none;padding:10px;border-radius:6px;font-weight:bold;">
+          ➕ Save Lead
+        </button>
+      </div>
+    `).join("");
+  } catch (e) {
+    document.getElementById("results").innerHTML = "❌ Error fetching leads.";
   }
 }
 
-// ★ Hybrid Revenue Estimator
-async function estimateRevenue(keyword, website) {
-  const industryRanges = {
-    contractor: [500000, 5000000],
-    dentist: [300000, 2000000],
-    restaurant: [250000, 3000000],
-    trucking: [300000, 7000000],
-    salon: [100000, 800000],
-    retail: [200000, 2000000],
-    auto: [300000, 4000000],
-    doctor: [400000, 5000000],
-    lawyer: [350000, 3000000]
-  };
-
-  let range = industryRanges[keyword?.toLowerCase()] || [200000, 3000000];
-  let revenue = avg(range);
-
-  // website scanning boost
-  if (website) {
-    try {
-      const res = await fetch(website, { timeout: 5000 });
-      const text = await res.text();
-
-      if (/employees|team|staff|careers/i.test(text)) revenue *= 1.5;
-      if (/franchise|locations/i.test(text)) revenue *= 2;
-      if (/award|top|certified/i.test(text)) revenue *= 1.3;
-    } catch {}
-  }
-
-  return Math.round(revenue);
+function saveLead(index) {
+  const lead = window.lastResults[index];
+  savedLeads.push(lead);
+  localStorage.setItem("savedLeads", JSON.stringify(savedLeads));
+  renderSaved();
+  alert("✅ Lead saved to CRM panel");
 }
 
-function avg([min, max]) { return (min + max) / 2; }
+function renderSaved() {
+  const list = document.getElementById("savedList");
+  if (!savedLeads.length) {
+    list.innerHTML = "<i>No saved leads</i>";
+    return;
+  }
+
+  list.innerHTML = savedLeads.map(l => `
+    <div class="saved-card">
+      <b>${l.name}</b><br>
+      📍 ${l.address}<br>
+      📞 ${l.phone || "N/A"}<br>
+      👤 ${l.owner || "Unknown"}<br>
+      💰 ${l.revenue ? "$" + l.revenue.toLocaleString() : "N/A"}<br>
+      🗓️ ${l.filedDate || "N/A"}
+    </div>
+  `).join("");
+}
+
+function downloadSaved() {
+  if (!savedLeads.length) return alert("No leads to download.");
+  const rows = [
+    ["Name", "Address", "Phone", "Website", "Email", "Owner", "Revenue", "Filing Date"],
+    ...savedLeads.map(l => [
+      l.name, l.address, l.phone, l.website, l.email, l.owner, l.revenue, l.filedDate
+    ])
+  ];
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "leads.csv";
+  link.click();
+}
+
+renderSaved();
+</script>
+</body>
+</html>
