@@ -1,14 +1,24 @@
-import { openDb } from "./connection.js";
+// db/migrate.js
+import sqlite3 from "sqlite3";
+import fs from "fs";
 
-(async () => {
-  const db = await openDb();
-  await db.exec(`
-    ALTER TABLE leads ADD COLUMN filing_source TEXT;
-    ALTER TABLE leads ADD COLUMN entity_type TEXT;
-    ALTER TABLE leads ADD COLUMN agent_name TEXT;
-    ALTER TABLE leads ADD COLUMN entity_status TEXT;
-    ALTER TABLE leads ADD COLUMN confidence_owner INTEGER DEFAULT 0;
-    ALTER TABLE leads ADD COLUMN enriched_ts TEXT;
-  `);
-  console.log("DB migration complete ✅");
-})();
+const DB_PATH = "db/leads.db";
+const SCHEMA_PATH = "db/schema.sql";
+
+if (!fs.existsSync(SCHEMA_PATH)) {
+  console.error("❌ Missing schema.sql");
+  process.exit(1);
+}
+
+const db = new sqlite3.Database(DB_PATH);
+
+const schema = fs.readFileSync(SCHEMA_PATH, "utf8");
+
+db.exec(schema, (err) => {
+  if (err) {
+    console.error("❌ Migration failed:", err);
+  } else {
+    console.log("✅ Database migration completed!");
+  }
+  db.close();
+});
