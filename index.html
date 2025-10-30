@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>MCA Lead Finder</title>
+<style>
+  body { font-family: Arial; background: #0b1628; color:white; padding:20px; }
+  h1 { color:#ffd44f; }
+  input,button { padding:10px; font-size:16px; width:300px; }
+  button { background:#ffd44f; border:none; cursor:pointer; width:150px; }
+  .lead { background:#13223e; padding:10px; margin-top:10px; border-radius:6px; }
+</style>
+</head>
+<body>
+
+<h1>Free MCA Lead Finder</h1>
+<input id="query" placeholder="Contractor, Auto shop, Restaurant, etc">
+<button onclick="search()">Find Leads</button>
+
+<div id="results"></div>
+
+<script>
+async function search() {
+  const q = document.getElementById("query").value;
+  document.getElementById("results").innerHTML = "Searching...";
+
+  const r = await fetch("/api/leads?q=" + encodeURIComponent(q));
+  const data = await r.json();
+
+  if (!data.leads.length) {
+    document.getElementById("results").innerHTML = "No leads found.";
+    return;
+  }
+
+  document.getElementById("results").innerHTML = data.leads.map(l => `
+    <div class="lead">
+      <b>${l.name}</b><br>
+      📍 ${l.address}<br>
+      📞 ${l.phone || "N/A"}<br>
+      ✉️ ${l.email || "N/A"}<br>
+    </div>
+  `).join("");
+}
+</script>
+
+</body>
+</html>
