@@ -5,144 +5,190 @@
 <title>MCA Lead Finder</title>
 
 <style>
-  body { font-family: Arial, sans-serif; background:#0c1321; margin:0; color:white; }
-  h1 { text-align:center; color:#f6d776; margin-top:30px; font-size:38px; }
+    body { background:#0B111F; margin:0; font-family:Inter,Arial; color:white; }
+    h1 { text-align:center; color:#F9D65A; margin:30px 0; font-size:42px; font-weight:800; letter-spacing:-1px; }
 
-  .search-bar { display:flex; justify-content:center; margin:20px; gap:10px; }
-  input, select { padding:14px; font-size:18px; border-radius:8px; border:none; }
-  input{ width:420px; }
-  button { background:#f6d776; color:#000; border:none; padding:14px 20px; border-radius:8px; font-size:18px; cursor:pointer; font-weight:bold; }
+    /* Search Wrapper */
+    .search-box { display:flex; justify-content:center; gap:10px; margin-bottom:15px; }
+    .big-input {
+        width:60%; padding:16px; font-size:18px; border-radius:10px;
+        border:2px solid #1D2941; background:#0F1628; color:white;
+    }
+    button {
+        background:#F9D65A; color:#000; border:none;
+        padding:16px 24px; border-radius:10px; font-size:18px; cursor:pointer;
+        font-weight:700; transition:.2s;
+    }
+    button:hover { background:#FFE08A; }
 
-  .container { display:flex; }
-  #results { flex:1; padding:20px; }
+    /* Filters */
+    .filter-row {
+        display:flex; justify-content:center; gap:10px; margin-bottom:15px;
+    }
+    select,input[type=number],input[type=date] {
+        padding:12px; border-radius:8px; border:1px solid #25324A;
+        background:#141D31; color:white; font-size:14px; width:160px;
+    }
 
-  .card { background:#111a2b; padding:16px; margin-bottom:12px; border-left:4px solid #f6d776; border-radius:8px; font-size:16px; }
-  .line { margin:4px 0; }
-  .value { font-weight:bold; }
-  .btn-sm { background:#59e460; padding:6px 10px; font-size:14px; border-radius:6px; margin-top:6px; }
+    .sort-row { text-align:center; margin:10px 0; }
+    .sort-btn {
+        background:#1F2B45; color:white; border:1px solid #F9D65A;
+        padding:8px 14px; border-radius:6px; margin:0 4px; cursor:pointer;
+        font-size:14px;
+    }
 
-  /* CRM panel */
-  #crm { width:280px; background:#f6d776; color:#000; padding:14px; height:100vh; overflow-y:auto; }
-  #crm h3 { text-align:center; margin-top:0; }
-  .crm-card { background:white; border-radius:6px; padding:10px; margin-bottom:10px; font-size:14px; }
-  .edit-input { width:95%; padding:6px; margin-top:6px; }
+    /* Container */
+    .wrap { display:flex; }
 
-  .link { color:#fff; text-decoration:underline; cursor:pointer; margin-bottom:10px; display:block; text-align:center; }
+    /* Results */
+    #results { flex:1; padding:20px; }
+
+    /* Lead card */
+    .card {
+        background:#121A2E; border-radius:10px; border:1px solid #27314E;
+        padding:18px; margin-bottom:12px; transition:.2s;
+    }
+    .card:hover { border-color:#F9D65A; transform:translateY(-2px); }
+    .name { font-size:20px; font-weight:700; margin-bottom:6px; }
+
+    .line { font-size:14px; margin:4px 0; color:#CBD4E6; }
+    .label { color:#F9D65A; font-weight:700; }
+
+    .save-btn {
+        margin-top:8px; background:#23D160; color:white; font-size:14px;
+        padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer;
+        border:none;
+    }
+
+    .add-owner-input {
+        width:100%; padding:8px; border-radius:8px; margin-top:6px;
+        background:#0B111F; border:1px solid #3E4D6D; color:white;
+    }
+
+    /* Right CRM panel */
+    #crm {
+        width:300px; background:#F9D65A; color:black;
+        padding:16px; height:100vh; overflow-y:auto;
+    }
+    .crm-title { font-weight:800; text-align:center; margin-bottom:10px; font-size:20px; }
+    .crm-card {
+        background:white; padding:10px; margin-bottom:10px;
+        border-radius:8px; font-size:14px;
+    }
+    .crm-input { width:100%; padding:6px; margin-top:5px; border-radius:6px; border:1px solid #aaa; }
+    .crm-delete { font-size:12px;color:red; cursor:pointer; margin-top:4px; display:inline-block; }
+
 </style>
 </head>
 <body>
 
 <h1>Free MCA Lead Finder</h1>
 
-<div class="search-bar">
-  <input id="keyword" placeholder="Search industry (contractor, restaurant)">
-  <button onclick="findLeads()">Search</button>
+<!-- Search -->
+<div class="search-box">
+    <input id="keyword" class="big-input" placeholder="Search business type (restaurant, contractor, trucking)">
+    <button onclick="findLeads()">Search</button>
 </div>
 
-<div class="search-bar" style="margin-top:-10px;">
-  <select id="state">
-    <option value="">All States</option><option>CA</option><option>FL</option><option>NY</option><option>TX</option><option>VA</option>
-  </select>
-  <input id="minRev" placeholder="Min Revenue" type="number">
-  <input id="maxRev" placeholder="Max Revenue" type="number">
-  <input id="filedAfter" type="date">
+<!-- Filters -->
+<div class="filter-row">
+    <select id="state"><option value="">All States</option></select>
+    <input id="minRev" type="number" placeholder="Min Revenue">
+    <input id="maxRev" type="number" placeholder="Max Revenue">
+    <input id="filedAfter" type="date">
 </div>
 
-<div style="text-align:center; margin-bottom:10px;">
-  <button onclick="setSort('desc')">⬇️ Revenue High → Low</button>
-  <button onclick="setSort('asc')">⬆️ Revenue Low → High</button>
-  <a class="link" href="/filed.html">📁 Search by Filing Date</a>
+<!-- Sort -->
+<div class="sort-row">
+    <button class="sort-btn" onclick="sortOrder='asc'; findLeads()">⬆️ Rev Low→High</button>
+    <button class="sort-btn" onclick="sortOrder='desc'; findLeads()">⬇️ Rev High→Low</button>
+    <a href="/filed.html" style="color:#F9D65A;font-size:14px;text-decoration:none;">📁 Date-Filed View</a>
 </div>
 
-<div class="container">
-  <div id="results"></div>
+<div class="wrap">
+<div id="results"></div>
 
-  <div id="crm">
-    <h3>📂 Saved Leads</h3>
+<!-- CRM Sidebar -->
+<div id="crm">
+    <div class="crm-title">Saved Leads</div>
     <div id="saved"></div>
-    <button onclick="downloadCSV()">⬇️ Download CSV</button>
-  </div>
+    <button onclick="downloadCSV()">⬇️ Export CSV</button>
+</div>
 </div>
 
 <script>
-let sortOrder = "desc";
 let saved = JSON.parse(localStorage.getItem("savedLeads")||"[]");
+let sortOrder = "desc";
 
-function setSort(o){ sortOrder=o; findLeads(); }
+/* load states list */
+fetch("https://gist.githubusercontent.com/mshafrir/2646763/raw/states_titlecase.json")
+    .then(r=>r.json()).then(d=>{
+        d.forEach(s=> state.innerHTML+=`<option>${s.abbreviation}</option>`);
+    });
 
 async function findLeads(){
-  const k = keyword.value, st = state.value, min=minRev.value||0, max=maxRev.value||99999999, fd=filedAfter.value;
-  results.innerHTML="🔎 Searching...";
-  try{
-    const r = await fetch(`/api/leads?keyword=${k}&state=${st}&minRev=${min}&maxRev=${max}&filedAfter=${fd}&sortOrder=${sortOrder}`);
-    const d = await r.json(); window.last=d;
+    results.innerHTML="⏳ Searching...";
+    const r = await fetch(`/api/leads?keyword=${keyword.value}&state=${state.value}&minRev=${minRev.value||0}&maxRev=${maxRev.value||99999999}&filedAfter=${filedAfter.value}&sortOrder=${sortOrder}`);
+    const d = await r.json();
+    window.last = d;
 
     results.innerHTML = d.map((b,i)=>`
-      <div class="card">
-        <div class="line"><span class="value">${b.name}</span></div>
-        <div class="line">📍 ${b.address}</div>
-        <div class="line">📞 ${b.phone||"N/A"}</div>
-        <div class="line">🌐 ${b.website||"N/A"}</div>
-        <div class="line">📧 ${b.email||"N/A"}</div>
-        <div class="line">👤 Owner: ${b.owner||`<button class='btn-sm' onclick='addOwner(${i})'>Add Owner</button>`}</div>
-        <div class="line">💰 Revenue: ${b.revenue?("$"+b.revenue.toLocaleString()):"N/A"}</div>
-        <div class="line">🗓️ Filed: ${b.filedDate||"N/A"}</div>
-        <button class="btn-sm" onclick="save(${i})">+ Save</button>
-      </div>
+        <div class="card">
+            <div class="name">${b.name}</div>
+            <div class="line"><span class="label">📍 Address:</span> ${b.address}</div>
+            <div class="line"><span class="label">📞 Phone:</span> ${b.phone||"N/A"}</div>
+            <div class="line"><span class="label">🌐 Website:</span> ${b.website||"N/A"}</div>
+            <div class="line"><span class="label">📧 Email:</span> ${b.email||"N/A"}</div>
+
+            <div class="line"><span class="label">👤 Owner:</span> 
+                ${b.owner?b.owner:`<input class='add-owner-input' placeholder='Add owner...' onblur='saveOwner(${i}, this.value)'>`}
+            </div>
+
+            <div class="line"><span class="label">💰 Revenue:</span> ${b.revenue?("$"+b.revenue.toLocaleString()):"N/A"}</div>
+            <div class="line"><span class="label">📅 Filed:</span> ${b.filedDate||"N/A"}</div>
+
+            <button class="save-btn" onclick="save(${i})">+ Save Lead</button>
+        </div>
     `).join("");
-  }catch{
-    results.innerHTML="❌ Error";
-  }
 }
 
-function addOwner(i){
-  const name=prompt("Enter owner name:");
-  if(name){
-    window.last[i].owner=name;
-    save(i);
-    findLeads();
-  }
+function saveOwner(i,v){
+    if(!v) return;
+    window.last[i].owner=v;
 }
 
 function save(i){
-  saved.push(window.last[i]);
-  localStorage.setItem("savedLeads",JSON.stringify(saved));
-  loadCRM();
+    saved.push(window.last[i]);
+    localStorage.setItem("savedLeads",JSON.stringify(saved));
+    loadCRM();
 }
 
 function loadCRM(){
-  saved = JSON.parse(localStorage.getItem("savedLeads")||"[]");
-  savedEl.innerHTML = saved.map((l,i)=>`
-    <div class="crm-card">
-      <b>${l.name}</b><br>
-      📍 ${l.address}<br>
-      📞 ${l.phone||"N/A"}<br>
-      👤 Owner: ${l.owner||"N/A"}
-      <input class="edit-input" placeholder="Edit owner..." 
-      onblur="editOwner(${i},this.value)">
-      <button style="font-size:12px;color:red" onclick="del(${i})">🗑 Delete</button>
-    </div>
-  `).join("");
+    saved = JSON.parse(localStorage.getItem("savedLeads")||"[]");
+    savedEl.innerHTML = saved.map((l,i)=>`
+        <div class="crm-card">
+            <b>${l.name}</b><br>
+            📍 ${l.address}<br>
+            👤 Owner: ${l.owner||"N/A"}<br>
+
+            <input class="crm-input" placeholder="Edit owner..." 
+            onblur="editOwner(${i},this.value)">
+            <span class="crm-delete" onclick="del(${i})">🗑 Delete</span>
+        </div>
+    `).join("");
 }
 
 function editOwner(i,val){
-  if(val){
-    saved[i].owner=val;
-    localStorage.setItem("savedLeads",JSON.stringify(saved));
-    loadCRM();
-  }
+    if(val){ saved[i].owner=val; localStorage.setItem("savedLeads",JSON.stringify(saved)); loadCRM(); }
 }
 function del(i){
-  saved.splice(i,1);
-  localStorage.setItem("savedLeads",JSON.stringify(saved));
-  loadCRM();
+    saved.splice(i,1); localStorage.setItem("savedLeads",JSON.stringify(saved)); loadCRM();
 }
 function downloadCSV(){
-  const rows=[["Name","Address","Phone","Email","Owner","Revenue","Filed"],...saved.map(l=>[
-    l.name,l.address,l.phone,l.email,l.owner,l.revenue,l.filedDate
-  ])];
-  const blob=new Blob([rows.map(r=>r.join(",")).join("\n")]);
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="leads.csv"; a.click();
+    const rows=[["Name","Address","Phone","Email","Owner","Revenue","Filed"],...saved.map(l=>[
+        l.name,l.address,l.phone,l.email,l.owner,l.revenue,l.filedDate])];
+    const blob=new Blob([rows.map(r=>r.join(",")).join("\n")]);
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="leads.csv"; a.click();
 }
 loadCRM();
 </script>
