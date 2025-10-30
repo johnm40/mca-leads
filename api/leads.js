@@ -1,43 +1,37 @@
 export default async function handler(req, res) {
+  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+  const { term } = req.query;
+
+  if (!GOOGLE_API_KEY) {
+    console.error("Missing GOOGLE_API_KEY");
+    return res.status(500).json({ error: "Server missing API key" });
+  }
+
   try {
-    const { query } = req.query;
-
-    if (!query) {
-      return res.status(400).json({ error: "Missing query parameter" });
-    }
-
-    const apiKey = process.env.GOOGLE_API_KEY;
-
-    if (!apiKey) {
-      console.error("❌ Missing GOOGLE_API_KEY");
-      return res.status(500).json({ error: "Server API key missing" });
-    }
-
     const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-      query + " business"
-    )}&type=business&radius=50000&key=${apiKey}`;
+      term
+    )}&key=${GOOGLE_API_KEY}`;
 
-    console.log("🔎 Fetching:", url);
+    console.log("Fetching:", url);
 
     const response = await fetch(url);
     const data = await response.json();
 
-    console.log("📡 Google Response:", data);
-
-    if (data.status !== "OK" && data.results?.length === 0) {
-      return res.status(200).json({ leads: [], error: data.status });
+    if (data.error_message) {
+      console.error("Google Error:", data.error_message);
+      return res.status(400).json({ error: data.error_message });
     }
 
-    const leads = data.results.map((place) => ({
-      name: place.name || "Unknown",
-      address: place.formatted_address || "N/A",
-      rating: place.rating || "N/A",
-      type: place.types?.[0] || "business"
+    const leads = data.results.map(b => ({
+      name: b.name,
+      address: b.formatted_address ?? "",
+      business_status: b.business_status ?? "UNKNOWN",
+      url: `https://www.google.com/maps/place/?q=place_id:${b.place_id}`
     }));
 
     res.status(200).json({ leads });
   } catch (err) {
-    console.error("🔥 ERROR:", err);
-    res.status(500).json({ error: "Server error fetching leads" });
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
   }
 }
