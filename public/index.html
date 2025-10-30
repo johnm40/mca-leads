@@ -2,195 +2,161 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>MCA Lead Finder</title>
-
 <style>
-    body { background:#0B111F; margin:0; font-family:Inter,Arial; color:white; }
-    h1 { text-align:center; color:#F9D65A; margin:30px 0; font-size:42px; font-weight:800; letter-spacing:-1px; }
-
-    /* Search Wrapper */
-    .search-box { display:flex; justify-content:center; gap:10px; margin-bottom:15px; }
-    .big-input {
-        width:60%; padding:16px; font-size:18px; border-radius:10px;
-        border:2px solid #1D2941; background:#0F1628; color:white;
-    }
-    button {
-        background:#F9D65A; color:#000; border:none;
-        padding:16px 24px; border-radius:10px; font-size:18px; cursor:pointer;
-        font-weight:700; transition:.2s;
-    }
-    button:hover { background:#FFE08A; }
-
-    /* Filters */
-    .filter-row {
-        display:flex; justify-content:center; gap:10px; margin-bottom:15px;
-    }
-    select,input[type=number],input[type=date] {
-        padding:12px; border-radius:8px; border:1px solid #25324A;
-        background:#141D31; color:white; font-size:14px; width:160px;
-    }
-
-    .sort-row { text-align:center; margin:10px 0; }
-    .sort-btn {
-        background:#1F2B45; color:white; border:1px solid #F9D65A;
-        padding:8px 14px; border-radius:6px; margin:0 4px; cursor:pointer;
-        font-size:14px;
-    }
-
-    /* Container */
-    .wrap { display:flex; }
-
-    /* Results */
-    #results { flex:1; padding:20px; }
-
-    /* Lead card */
-    .card {
-        background:#121A2E; border-radius:10px; border:1px solid #27314E;
-        padding:18px; margin-bottom:12px; transition:.2s;
-    }
-    .card:hover { border-color:#F9D65A; transform:translateY(-2px); }
-    .name { font-size:20px; font-weight:700; margin-bottom:6px; }
-
-    .line { font-size:14px; margin:4px 0; color:#CBD4E6; }
-    .label { color:#F9D65A; font-weight:700; }
-
-    .save-btn {
-        margin-top:8px; background:#23D160; color:white; font-size:14px;
-        padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer;
-        border:none;
-    }
-
-    .add-owner-input {
-        width:100%; padding:8px; border-radius:8px; margin-top:6px;
-        background:#0B111F; border:1px solid #3E4D6D; color:white;
-    }
-
-    /* Right CRM panel */
-    #crm {
-        width:300px; background:#F9D65A; color:black;
-        padding:16px; height:100vh; overflow-y:auto;
-    }
-    .crm-title { font-weight:800; text-align:center; margin-bottom:10px; font-size:20px; }
-    .crm-card {
-        background:white; padding:10px; margin-bottom:10px;
-        border-radius:8px; font-size:14px;
-    }
-    .crm-input { width:100%; padding:6px; margin-top:5px; border-radius:6px; border:1px solid #aaa; }
-    .crm-delete { font-size:12px;color:red; cursor:pointer; margin-top:4px; display:inline-block; }
-
+body {
+  background: #09101a;
+  font-family: Arial, sans-serif;
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+header {
+  padding: 25px;
+  font-size: 40px;
+  font-weight: bold;
+  text-align: center;
+  color: #f5d56e;
+}
+.container {
+  width: 90%;
+  margin: auto;
+}
+input, select {
+  padding: 12px;
+  font-size: 16px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+button {
+  padding: 12px;
+  background: #f5d56e;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+.lead-card {
+  background: #0f1823;
+  border-left: 6px solid #f5d56e;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 6px;
+}
+.small-btn {
+  padding: 8px;
+  width: auto;
+  font-size: 14px;
+  margin-right: 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.edit { background: #4fb3ff; }
+.delete { background: #ff5757; }
+.save { background: #58ff87; }
+.sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  background: #f5d56e;
+  width: 260px;
+  height: 100vh;
+  padding: 10px;
+  overflow-y: auto;
+  color: #000;
+}
+.sidebar h3 {
+  text-align: center;
+}
 </style>
 </head>
+
 <body>
 
-<h1>Free MCA Lead Finder</h1>
+<header>Free MCA Lead Finder</header>
 
-<!-- Search -->
-<div class="search-box">
-    <input id="keyword" class="big-input" placeholder="Search business type (restaurant, contractor, trucking)">
-    <button onclick="findLeads()">Search</button>
+<div class="container">
+  <input id="query" placeholder="Search: contractor, restaurant, LLC etc">
+  <button onclick="searchLeads()">Find Leads</button>
+  <div id="results"></div>
 </div>
 
-<!-- Filters -->
-<div class="filter-row">
-    <select id="state"><option value="">All States</option></select>
-    <input id="minRev" type="number" placeholder="Min Revenue">
-    <input id="maxRev" type="number" placeholder="Max Revenue">
-    <input id="filedAfter" type="date">
-</div>
-
-<!-- Sort -->
-<div class="sort-row">
-    <button class="sort-btn" onclick="sortOrder='asc'; findLeads()">⬆️ Rev Low→High</button>
-    <button class="sort-btn" onclick="sortOrder='desc'; findLeads()">⬇️ Rev High→Low</button>
-    <a href="/filed.html" style="color:#F9D65A;font-size:14px;text-decoration:none;">📁 Date-Filed View</a>
-</div>
-
-<div class="wrap">
-<div id="results"></div>
-
-<!-- CRM Sidebar -->
-<div id="crm">
-    <div class="crm-title">Saved Leads</div>
-    <div id="saved"></div>
-    <button onclick="downloadCSV()">⬇️ Export CSV</button>
-</div>
+<div class="sidebar">
+  <h3>Saved Leads</h3>
+  <div id="saved-leads"></div>
 </div>
 
 <script>
-let saved = JSON.parse(localStorage.getItem("savedLeads")||"[]");
-let sortOrder = "desc";
+async function searchLeads() {
+  const query = document.getElementById("query").value;
 
-/* load states list */
-fetch("https://gist.githubusercontent.com/mshafrir/2646763/raw/states_titlecase.json")
-    .then(r=>r.json()).then(d=>{
-        d.forEach(s=> state.innerHTML+=`<option>${s.abbreviation}</option>`);
-    });
+  const res = await fetch(`/api/leads?query=${query}`);
+  const data = await res.json();
 
-async function findLeads(){
-    results.innerHTML="⏳ Searching...";
-    const r = await fetch(`/api/leads?keyword=${keyword.value}&state=${state.value}&minRev=${minRev.value||0}&maxRev=${maxRev.value||99999999}&filedAfter=${filedAfter.value}&sortOrder=${sortOrder}`);
-    const d = await r.json();
-    window.last = d;
+  const box = document.getElementById("results");
+  box.innerHTML = "";
 
-    results.innerHTML = d.map((b,i)=>`
-        <div class="card">
-            <div class="name">${b.name}</div>
-            <div class="line"><span class="label">📍 Address:</span> ${b.address}</div>
-            <div class="line"><span class="label">📞 Phone:</span> ${b.phone||"N/A"}</div>
-            <div class="line"><span class="label">🌐 Website:</span> ${b.website||"N/A"}</div>
-            <div class="line"><span class="label">📧 Email:</span> ${b.email||"N/A"}</div>
-
-            <div class="line"><span class="label">👤 Owner:</span> 
-                ${b.owner?b.owner:`<input class='add-owner-input' placeholder='Add owner...' onblur='saveOwner(${i}, this.value)'>`}
-            </div>
-
-            <div class="line"><span class="label">💰 Revenue:</span> ${b.revenue?("$"+b.revenue.toLocaleString()):"N/A"}</div>
-            <div class="line"><span class="label">📅 Filed:</span> ${b.filedDate||"N/A"}</div>
-
-            <button class="save-btn" onclick="save(${i})">+ Save Lead</button>
-        </div>
-    `).join("");
+  data.results.forEach((biz) => {
+    const div = document.createElement("div");
+    div.className = "lead-card";
+    div.innerHTML = `
+      <b>${biz.name}</b><br>
+      📍 ${biz.address || "N/A"}<br>
+      📞 ${biz.phone || "N/A"}<br>
+      🌐 ${biz.website || "N/A"}<br>
+      ✉️ ${biz.email || "N/A"}<br>
+      👤 Owner: ${biz.owner || "N/A"}<br>
+      💰 Revenue: ${biz.revenue || "N/A"}<br>
+      🗓 Filing: ${biz.filed || "N/A"}<br>
+      <button class="small-btn save" onclick='saveLead(${JSON.stringify(biz)})'>Save Lead</button>
+    `;
+    box.appendChild(div);
+  });
 }
 
-function saveOwner(i,v){
-    if(!v) return;
-    window.last[i].owner=v;
+// save lead to DB
+async function saveLead(biz) {
+  await fetch("/api/leads-save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(biz)
+  });
+  loadSaved();
 }
 
-function save(i){
-    saved.push(window.last[i]);
-    localStorage.setItem("savedLeads",JSON.stringify(saved));
-    loadCRM();
-}
+// load saved leads to sidebar
+async function loadSaved() {
+  const res = await fetch("/api/leads-get");
+  const data = await res.json();
 
-function loadCRM(){
-    saved = JSON.parse(localStorage.getItem("savedLeads")||"[]");
-    savedEl.innerHTML = saved.map((l,i)=>`
-        <div class="crm-card">
-            <b>${l.name}</b><br>
-            📍 ${l.address}<br>
-            👤 Owner: ${l.owner||"N/A"}<br>
+  const box = document.getElementById("saved-leads");
+  box.innerHTML = "";
 
-            <input class="crm-input" placeholder="Edit owner..." 
-            onblur="editOwner(${i},this.value)">
-            <span class="crm-delete" onclick="del(${i})">🗑 Delete</span>
-        </div>
-    `).join("");
+  data.forEach((biz) => {
+    box.innerHTML += `
+      <div>
+        <b>${biz.name}</b><br>
+        <button class="small-btn edit" onclick="editLead(${biz.id})">Edit</button>
+        <button class="small-btn delete" onclick="deleteLead(${biz.id})">X</button>
+        <hr>
+      </div>
+    `;
+  });
 }
+loadSaved();
 
-function editOwner(i,val){
-    if(val){ saved[i].owner=val; localStorage.setItem("savedLeads",JSON.stringify(saved)); loadCRM(); }
+// Delete lead
+async function deleteLead(id) {
+  await fetch("/api/leads-delete", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({id})
+  });
+  loadSaved();
 }
-function del(i){
-    saved.splice(i,1); localStorage.setItem("savedLeads",JSON.stringify(saved)); loadCRM();
-}
-function downloadCSV(){
-    const rows=[["Name","Address","Phone","Email","Owner","Revenue","Filed"],...saved.map(l=>[
-        l.name,l.address,l.phone,l.email,l.owner,l.revenue,l.filedDate])];
-    const blob=new Blob([rows.map(r=>r.join(",")).join("\n")]);
-    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="leads.csv"; a.click();
-}
-loadCRM();
 </script>
 
 </body>
