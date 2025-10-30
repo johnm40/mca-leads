@@ -1,38 +1,33 @@
+// /api/leads.js
 export default async function handler(req, res) {
+  const query = req.query.q || "business";
+  const apiKey = process.env.GOOGLE_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({ error: "Missing Google API key" });
+  }
+
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + " business")}&location=40.7128,-74.0060&radius=50000&key=${apiKey}`;
+
   try {
-    const q = req.query.q || "contractor";
-    const key = process.env.GOOGLE_API_KEY;
-
-    if (!key) {
-      return res.status(500).json({ error: "Missing Google API key" });
-    }
-
-    // NYC default – can later let user select zip/state
-    const location = "40.7128,-74.0060"; 
-    const radius = "30000"; // 30km search radius
-
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-      q + " business"
-    )}&location=${location}&radius=${radius}&key=${key}`;
-
-    const resp = await fetch(url);
-    const data = await resp.json();
+    const googleRes = await fetch(url);
+    const data = await googleRes.json();
 
     if (!data.results) {
-      return res.json([]);
+      throw new Error(JSON.stringify(data));
     }
 
-    // Return only useful business lead fields
-    const leads = data.results.map((b) => ({
-      name: b.name,
-      address: b.formatted_address,
-      location: b.geometry?.location,
-      rating: b.rating,
-      reviews: b.user_ratings_total,
-      place_id: b.place_id
+    const leads = data.results.slice(0, 10).map(place => ({
+      name: place.name,
+      address: place.formatted_address,
+      rating: place.rating,
+      reviews: place.user_ratings_total
     }));
 
     res.status(200).json({ leads });
-  } catch (err) {
-    console.error(err);
-    res.
+
+  } catch (error) {
+    console.error("API ERROR:", error);
+    return res.status(500).json({ error: "Google API failed" });
+  }
+}
