@@ -1,31 +1,38 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   try {
-    const q = req.query.q || "business";
+    const q = req.query.q || "contractor";
     const key = process.env.GOOGLE_API_KEY;
 
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q + " small business")}&key=${key}`;
-
-    const places = await (await fetch(url)).json();
-
-    const leads = [];
-
-    for (const p of places.results) {
-      const detailsURL = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=name,formatted_address,formatted_phone_number,website&key=${key}`;
-      const det = await (await fetch(detailsURL)).json();
-
-      leads.push({
-        name: det.result?.name,
-        address: det.result?.formatted_address,
-        phone: det.result?.formatted_phone_number || null,
-        email: det.result?.website ? `info@${new URL(det.result.website).hostname}` : null
-      });
+    if (!key) {
+      return res.status(500).json({ error: "Missing Google API key" });
     }
 
-    res.json({ leads });
+    // NYC default – can later let user select zip/state
+    const location = "40.7128,-74.0060"; 
+    const radius = "30000"; // 30km search radius
 
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-}
+    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
+      q + " business"
+    )}&location=${location}&radius=${radius}&key=${key}`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (!data.results) {
+      return res.json([]);
+    }
+
+    // Return only useful business lead fields
+    const leads = data.results.map((b) => ({
+      name: b.name,
+      address: b.formatted_address,
+      location: b.geometry?.location,
+      rating: b.rating,
+      reviews: b.user_ratings_total,
+      place_id: b.place_id
+    }));
+
+    res.status(200).json({ leads });
+  } catch (err) {
+    console.error(err);
+    res.
