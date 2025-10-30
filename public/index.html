@@ -1,54 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>MCA Lead Finder</title>
-  <style>
-    body { background:#0d1117; color:white; font-family:Arial; }
-    .box { background:#161b22; padding:15px; margin:10px 0; border-radius:6px; border-left:4px solid gold; }
-    input,select,button { padding:10px; margin:5px; border-radius:4px; border:none; }
-    button { background:gold; cursor:pointer; }
-  </style>
+<meta charset="UTF-8">
+<title>MCA Business Lead Finder</title>
+<style>
+body { font-family:Arial; background:#0e0e12; color:white; text-align:center; }
+input,select { padding:10px; margin:10px; width:260px; border-radius:6px; border:1px solid #555; }
+button { padding:12px 20px; background:#ffc400; border:0; font-size:18px; cursor:pointer; }
+#results { margin-top:20px; width:80%; margin-left:10%; background:#111; padding:20px; border-radius:8px; text-align:left; }
+.lead { padding:10px; border-bottom:1px solid #333; }
+</style>
 </head>
 <body>
 
-<h1>Free MCA Lead Finder</h1>
+<h2>🔥 MCA Lead Finder</h2>
 
-<input id="keyword" placeholder="industry (e.g. contractor, restaurant)">
+<input id="query" placeholder="Business type e.g. Roofing">
 <select id="state">
- <option value="">All States</option>
- <option>NY</option><option>CA</option><option>TX</option><option>FL</option> 
- <!-- add more later -->
+<option>CA</option><option>NY</option><option>FL</option><option>TX</option>
 </select>
 
-<button onclick="search()">Find Leads</button>
+<br>
+<button onclick="go()">Search Leads</button>
 
 <div id="results"></div>
 
 <script>
-async function search() {
-  const keyword = document.getElementById("keyword").value;
-  const state = document.getElementById("state").value;
-  
-  const res = await fetch(`/search?keyword=${keyword}&state=${state}`);
+async function go(){
+  const q = document.getElementById("query").value;
+  const s = document.getElementById("state").value;
+  const res = await fetch(`/api/leads-get.js?query=${q}&state=${s}`);
   const data = await res.json();
 
-  document.getElementById("results").innerHTML = data.map(b => `
-    <div class="box">
-      <b>${b.name}</b><br>
+  const box = document.getElementById("results");
+  box.innerHTML = "";
+  data.forEach(b => box.innerHTML += `
+    <div class="lead">
+      <b>${b.business}</b><br>
       📍 ${b.address}<br>
-      📞 ${b.phone}<br>
-      🌐 ${b.website || 'N/A'}<br>
-      👤 Owner: ${b.owner || 'N/A'}<br>
-      💰 Revenue: ${b.revenue || 'N/A'}<br>
-      📅 Filed: ${b.filing_date || 'N/A'}<br>
-      <button onclick='saveLead(${JSON.stringify(b)})'>Save Lead</button>
+      ⭐ ${b.rating || "N/A"}<br>
+      📞 ${b.phone || "N/A"}
     </div>
-  `).join("");
-}
-
-async function saveLead(lead) {
-  await fetch("/save", {method:"POST", headers:{'Content-Type':'application/json'}, body:JSON.stringify(lead)});
-  alert("Saved ✅");
+  `);
 }
 </script>
 
